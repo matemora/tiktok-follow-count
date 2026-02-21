@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="style.css">
+    <title>TikTok Follower Goal</title>
+    <style>
+        body {
+            background-color: transparent;
+            /* Importante para o OBS/TikTok Studio */
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            color: white;
+        }
+
+        #widget-container {
+            width: 400px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 15px;
+            border: 2px solid #fe2c55;
+            /* Cor oficial do TikTok */
+            box-shadow: 0 0 15px rgba(254, 44, 85, 0.5);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .progress-bg {
+            width: 100%;
+            height: 25px;
+            background: #333;
+            border-radius: 20px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        #progress-bar {
+            width: 0%;
+            /* Começa em 0 e cresce via JS */
+            height: 100%;
+            background: linear-gradient(90deg, #fe2c55, #25f4ee);
+            transition: width 1s ease-in-out;
+            /* Animação suave */
+            position: relative;
+        }
+
+        .glow {
+            position: absolute;
+            right: 0;
+            width: 10px;
+            height: 100%;
+            box-shadow: 0 0 15px white;
+            background: white;
+        }
+
+        .footer {
+            margin-top: 8px;
+            font-size: 0.9rem;
+            text-align: center;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="widget-container">
+        <div class="header">
+            <span class="title">META DE SEGUIDORES</span>
+            <span id="counter">0 / 100</span>
+        </div>
+
+        <div class="progress-bg">
+            <div id="progress-bar">
+                <div class="glow"></div>
+            </div>
+        </div>
+
+        <div class="footer">Faltam <span id="remaining">100</span> para o objetivo!</div>
+    </div>
+    <script>
+        const metaSeguidores = 2500;
+        const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSkV1b9JES3HSOkTyolIOEzbYMDq6dH12l_xAIsaWa9Qpo7ZLX5f_m8gEN7F2_D4xeWATS9sYALzGnP/pub?output=csv';
+
+        async function buscarDadosDaPlanilha() {
+            try {
+                const response = await fetch(CSV_URL);
+                console.log(response);
+                const data = await response.text();
+
+                // O CSV vem como "seguidores_atuais, 150". 
+                // Vamos pegar apenas o número na segunda linha/coluna.
+                const linhas = data.split('\n');
+                const valores = linhas[1].split(',');
+                const seguidoresAtuais = parseInt(valores[1]);
+
+                if (!isNaN(seguidoresAtuais)) {
+                    updateGoal(seguidoresAtuais);
+                }
+            } catch (error) {
+                console.error("Erro ao buscar dados:", error);
+            }
+        }
+
+        function updateGoal(currentFollowers) {
+            const counter = document.getElementById('counter');
+            const progressBar = document.getElementById('progress-bar');
+            const remaining = document.getElementById('remaining');
+
+            let percentage = (currentFollowers / metaSeguidores) * 100;
+            if (percentage > 100) percentage = 100;
+
+            progressBar.style.width = percentage + '%';
+            counter.innerText = `${currentFollowers} / ${metaSeguidores}`;
+
+            const faltam = metaSeguidores - currentFollowers;
+            remaining.innerText = faltam > 0 ? faltam : 0;
+        }
+
+        // Verifica a planilha assim que abrir e depois a cada 30 segundos
+        buscarDadosDaPlanilha();
+        setInterval(buscarDadosDaPlanilha, 30000);
+    </script>
+</body>
+
+</html>
