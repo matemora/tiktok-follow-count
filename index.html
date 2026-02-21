@@ -85,46 +85,58 @@
     </div>
     <script>
         const metaSeguidores = 2500;
-        const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSkV1b9JES3HSOkTyolIOEzbYMDq6dH12l_xAIsaWa9Qpo7ZLX5f_m8gEN7F2_D4xeWATS9sYALzGnP/pub?output=csv';
 
-        async function buscarDadosDaPlanilha() {
-            try {
-                const response = await fetch(CSV_URL);
-                console.log(response);
-                const data = await response.text();
+const URL_PLANILHA = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSkV1b9JES3HSOkTyolIOEzbYMDq6dH12l_xAIsaWa9Qpo7ZLX5f_m8gEN7F2_D4xeWATS9sYALzGnP/pub?output=csv';
 
-                // O CSV vem como "seguidores_atuais, 150". 
-                // Vamos pegar apenas o número na segunda linha/coluna.
-                const linhas = data.split('\n');
-                const valores = linhas[1].split(',');
-                const seguidoresAtuais = parseInt(valores[1]);
+// Em vez de pegar o RAW, pegamos o objeto JSON do proxy
+const CSV_URL = `https://api.allorigins.win/get?url=${encodeURIComponent(URL_PLANILHA)}`;
 
-                if (!isNaN(seguidoresAtuais)) {
-                    updateGoal(seguidoresAtuais);
-                }
-            } catch (error) {
-                console.error("Erro ao buscar dados:", error);
+async function buscarDadosDaPlanilha() {
+    try {
+        const response = await fetch(CSV_URL);
+        const data = await response.json();
+        // 1. Pega o conteúdo (que está em Base64)
+        let dataEncoded = data.contents;
+        
+        // 2. Decodifica de Base64 para texto puro
+        // Usamos decodeURIComponent(escape()) para lidar corretamente com acentos, se houver
+        let dataDecoded = decodeURIComponent(escape(atob(dataEncoded.split(',')[1] || dataEncoded)));
+        
+        
+        // O CSV vem como "seguidores_atuais, 150". 
+        // Vamos pegar apenas o número na segunda linha/coluna.
+        const linhas = dataDecoded.split('\n');
+        if (linhas.length > 1) {
+            const valores = linhas[1].split(',');
+            const seguidoresAtuais = parseInt(valores[0].trim());
+
+            if (!isNaN(seguidoresAtuais)) {
+                updateGoal(seguidoresAtuais);
             }
         }
+    } catch (error) {
+        console.error("Erro ao buscar dados:", error);
+    }
+}
 
-        function updateGoal(currentFollowers) {
-            const counter = document.getElementById('counter');
-            const progressBar = document.getElementById('progress-bar');
-            const remaining = document.getElementById('remaining');
+function updateGoal(currentFollowers) {
+    const counter = document.getElementById('counter');
+    const progressBar = document.getElementById('progress-bar');
+    const remaining = document.getElementById('remaining');
 
-            let percentage = (currentFollowers / metaSeguidores) * 100;
-            if (percentage > 100) percentage = 100;
+    let percentage = (currentFollowers / metaSeguidores) * 100;
+    if (percentage > 100) percentage = 100;
 
-            progressBar.style.width = percentage + '%';
-            counter.innerText = `${currentFollowers} / ${metaSeguidores}`;
+    progressBar.style.width = percentage + '%';
+    counter.innerText = `${currentFollowers} / ${metaSeguidores}`;
+    
+    const faltam = metaSeguidores - currentFollowers;
+    remaining.innerText = faltam > 0 ? faltam : 0;
+}
 
-            const faltam = metaSeguidores - currentFollowers;
-            remaining.innerText = faltam > 0 ? faltam : 0;
-        }
-
-        // Verifica a planilha assim que abrir e depois a cada 30 segundos
-        buscarDadosDaPlanilha();
-        setInterval(buscarDadosDaPlanilha, 30000);
+// Verifica a planilha assim que abrir e depois a cada 30 segundos
+buscarDadosDaPlanilha();
+setInterval(buscarDadosDaPlanilha, 30000);
     </script>
 </body>
 
