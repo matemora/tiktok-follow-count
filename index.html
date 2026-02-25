@@ -1,143 +1,135 @@
 <!DOCTYPE html>
 <html lang="pt-br">
-
 <head>
     <meta charset="UTF-8">
-    <link rel="stylesheet" href="style.css">
-    <title>TikTok Follower Goal</title>
+    <title>TikTok Follower Goal - Minimalist</title>
     <style>
         body {
             background-color: transparent;
-            /* Importante para o OBS/TikTok Studio */
-            font-family: 'Segoe UI', Roboto, sans-serif;
-            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            overflow: hidden;
         }
 
         #widget-container {
-            width: 400px;
-            padding: 20px;
-            background: rgba(0, 0, 0, 0.8);
-            border-radius: 15px;
-            border: 2px solid #fe2c55;
-            /* Cor oficial do TikTok */
-            box-shadow: 0 0 15px rgba(254, 44, 85, 0.5);
-        }
-
-        .header {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 10px;
-            font-weight: bold;
-            font-size: 1.2rem;
+            width: 600px; /* Mais horizontal */
+            position: relative;
         }
 
         .progress-bg {
             width: 100%;
-            height: 25px;
-            background: #333;
-            border-radius: 20px;
+            height: 40px; /* Barra mais robusta para caber o texto */
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 8px;
             overflow: hidden;
+            border: 2px solid #fe2c55;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
             position: relative;
+            display: flex;
+            align-items: center;
         }
 
         #progress-bar {
             width: 0%;
-            /* Começa em 0 e cresce via JS */
             height: 100%;
             background: linear-gradient(90deg, #fe2c55, #25f4ee);
-            transition: width 1s ease-in-out;
-            /* Animação suave */
-            position: relative;
+            transition: width 1.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: absolute;
+            z-index: 1;
+        }
+
+        /* Camada de texto centralizada */
+        .text-overlay {
+            position: absolute;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 15px;
+            box-sizing: border-box;
+            z-index: 2; /* Fica acima da barra colorida */
+            color: white;
+            font-weight: 800;
+            font-size: 14px;
+            text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.8);
+            pointer-events: none; /* Não interfere em cliques */
+            letter-spacing: 0.5px;
+        }
+
+        #counter {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 2px 8px;
+            border-radius: 4px;
         }
 
         .glow {
             position: absolute;
             right: 0;
-            width: 10px;
+            width: 5px;
             height: 100%;
-            box-shadow: 0 0 15px white;
             background: white;
-        }
-
-        .footer {
-            margin-top: 8px;
-            font-size: 0.9rem;
-            text-align: center;
-            opacity: 0.8;
+            box-shadow: 0 0 10px white;
         }
     </style>
 </head>
 
 <body>
     <div id="widget-container">
-        <div class="header">
-            <span class="title">META DE SEGUIDORES</span>
-            <span id="counter">0 / 100</span>
-        </div>
-
         <div class="progress-bg">
+            <div class="text-overlay">
+                <span>PESSOAS QUE NÃO SÃO SUBSTITUÍDAS PELA IA</span>
+                <span id="counter">0 / 2500</span>
+            </div>
+            
             <div id="progress-bar">
                 <div class="glow"></div>
             </div>
         </div>
-
-        <div class="footer">Faltam <span id="remaining">100</span> para o objetivo!</div>
     </div>
+
     <script>
         const metaSeguidores = 2500;
+        const URL_PLANILHA = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSkV1b9JES3HSOkTyolIOEzbYMDq6dH12l_xAIsaWa9Qpo7ZLX5f_m8gEN7F2_D4xeWATS9sYALzGnP/pub?output=csv';
+        const CSV_URL = `https://api.allorigins.win/get?url=${encodeURIComponent(URL_PLANILHA)}`;
 
-const URL_PLANILHA = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSkV1b9JES3HSOkTyolIOEzbYMDq6dH12l_xAIsaWa9Qpo7ZLX5f_m8gEN7F2_D4xeWATS9sYALzGnP/pub?output=csv';
+        async function buscarDadosDaPlanilha() {
+            try {
+                const response = await fetch(CSV_URL);
+                const data = await response.json();
+                let dataEncoded = data.contents;
+                
+                // Decodificação Base64
+                let dataDecoded = decodeURIComponent(escape(atob(dataEncoded.split(',')[1] || dataEncoded)));
+                
+                const linhas = dataDecoded.split('\n');
+                if (linhas.length > 1) {
+                    const valores = linhas[1].split(',');
+                    // Note: Ajustado para valores[0] conforme seu código anterior
+                    const seguidoresAtuais = parseInt(valores[0].trim());
 
-// Em vez de pegar o RAW, pegamos o objeto JSON do proxy
-const CSV_URL = `https://api.allorigins.win/get?url=${encodeURIComponent(URL_PLANILHA)}`;
-
-async function buscarDadosDaPlanilha() {
-    try {
-        const response = await fetch(CSV_URL);
-        const data = await response.json();
-        // 1. Pega o conteúdo (que está em Base64)
-        let dataEncoded = data.contents;
-        
-        // 2. Decodifica de Base64 para texto puro
-        // Usamos decodeURIComponent(escape()) para lidar corretamente com acentos, se houver
-        let dataDecoded = decodeURIComponent(escape(atob(dataEncoded.split(',')[1] || dataEncoded)));
-        
-        
-        // O CSV vem como "seguidores_atuais, 150". 
-        // Vamos pegar apenas o número na segunda linha/coluna.
-        const linhas = dataDecoded.split('\n');
-        if (linhas.length > 1) {
-            const valores = linhas[1].split(',');
-            const seguidoresAtuais = parseInt(valores[0].trim());
-
-            if (!isNaN(seguidoresAtuais)) {
-                updateGoal(seguidoresAtuais);
+                    if (!isNaN(seguidoresAtuais)) {
+                        updateGoal(seguidoresAtuais);
+                    }
+                }
+            } catch (error) {
+                console.error("Erro ao buscar dados:", error);
             }
         }
-    } catch (error) {
-        console.error("Erro ao buscar dados:", error);
-    }
-}
 
-function updateGoal(currentFollowers) {
-    const counter = document.getElementById('counter');
-    const progressBar = document.getElementById('progress-bar');
-    const remaining = document.getElementById('remaining');
+        function updateGoal(currentFollowers) {
+            const counter = document.getElementById('counter');
+            const progressBar = document.getElementById('progress-bar');
 
-    let percentage = (currentFollowers / metaSeguidores) * 100;
-    if (percentage > 100) percentage = 100;
+            let percentage = (currentFollowers / metaSeguidores) * 100;
+            if (percentage > 100) percentage = 100;
 
-    progressBar.style.width = percentage + '%';
-    counter.innerText = `${currentFollowers} / ${metaSeguidores}`;
-    
-    const faltam = metaSeguidores - currentFollowers;
-    remaining.innerText = faltam > 0 ? faltam : 0;
-}
+            progressBar.style.width = percentage + '%';
+            counter.innerText = `${currentFollowers} / ${metaSeguidores}`;
+        }
 
-// Verifica a planilha assim que abrir e depois a cada 30 segundos
-buscarDadosDaPlanilha();
-setInterval(buscarDadosDaPlanilha, 30000);
+        // Execução
+        buscarDadosDaPlanilha();
+        setInterval(buscarDadosDaPlanilha, 30000);
     </script>
 </body>
-
 </html>
